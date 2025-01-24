@@ -1,210 +1,61 @@
-import face_recognition
-import cv2
-import numpy as np
-import csv
-import os
-import fileinput
-import time
-import random
-import cvzone
-from cvzone.HandTrackingModule import HandDetector
-import datetime
+import tkinter as tk
+from tkinter import messagebox, font
+import subprocess
+import sys
 
+def take_attendance():
+    try:
+        subprocess.Popen([sys.executable, "Attendance_taker.py"])
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to start Attendance Taker: {e}")
 
-def gesturefunction(NAME):
-    cap = cv2.VideoCapture(0)
-    cap.set(3, 640)
-    cap.set(4, 480)
-    detector = HandDetector(maxHands=1)
-    inTime = time.time()
-    timer = 0
-    stateResult = False
-    startCheck = False
-    present = False
-    Wrong_Right = [0, 0]
-    randomNumber = 1
-    totalmoves = 0
+def update_database():
+    try:
+        subprocess.Popen([sys.executable, "Face_encoder.py"])
+        messagebox.showinfo("Success", "Database updated successfully.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to update database: {e}")
 
-    while True:
-        imgBG = cv2.imread("C:/Users/nisha/Downloads/NISHANT/AI_BOT/Project/rock/Resources/BG.png")
-        success, img = cap.read()
-        imgScaled = cv2.resize(img, (0, 0), None, 0.875, 0.875)
-        imgScaled = imgScaled[:, 80:480]
-        # Find Hands
-        hands, img = detector.findHands(imgScaled)  # with draw
-        if startCheck :
-            if totalmoves < 5 or Wrong_Right[1] < 5:
-                imgAI = cv2.imread(f'C:/Users/nisha/Downloads/NISHANT/AI_BOT/Project/rock/Resources/{randomNumber}.png', cv2.IMREAD_UNCHANGED)
-            imgBG = cvzone.overlayPNG(imgBG, imgAI, (149, 310))
-            if present :
-                cv2.putText(imgBG, f"{NAME} : Present", (310, 110), cv2.QT_FONT_NORMAL, 1.5, (0, 255, 0), 2)
-            else:
-                cv2.putText(imgBG, f"{NAME}", (310, 110), cv2.QT_FONT_NORMAL, 1.5, (0, 255, 0), 2)
-            if stateResult is False:
-                timer = time.time() - initialTime
-                cv2.putText(imgBG, str(int(timer)), (605, 435), cv2.FONT_HERSHEY_PLAIN, 6, (255, 0, 255), 4)
-                if timer > 3 :
-                    stateResult = True
-                    timer = 0
+class AttendanceSystem(tk.Tk):
+    def __init__(self):
+        super().__init__()
 
-                    if hands:
-                        hand_movement = None
-                        hand = hands[0]
-                        fingers = detector.fingersUp(hand)
-                        totalmoves += 1
-                        if fingers == [0, 0, 0, 0, 0]:
-                            hand_movement = 1
-                        elif fingers == [1, 1, 1, 1, 1]:
-                            hand_movement = 2
-                        elif fingers == [0, 1, 1, 0, 0]:
-                            hand_movement = 3
-                        else :
-                            hand_movement = 4
+        self.title("Attendance System")
+        self.iconbitmap("Resources/icon.ico")
+        self.geometry("400x300")
+        self.configure(bg="#f0f0f0")
 
-                        if (hand_movement == randomNumber):
-                            Wrong_Right[1] += 1
-                        else:
-                            Wrong_Right[0] +=1
-                        randomNumber = random.randint(1, 300) % 3
-                        if randomNumber == 0 :
-                            randomNumber = 3
+        self.create_widgets()
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    def create_widgets(self):
+        title_font = font.Font(family="Helvetica", size=18, weight="bold")
+        button_font = font.Font(family="Helvetica", size=12)
 
-        if totalmoves > 4 and Wrong_Right[1] > 4 :
-            present = True
-            time.sleep(1)
-            cv2.destroyAllWindows()
-            return present            
+        title_label = tk.Label(self, text="Attendance System", font=title_font, bg="#f0f0f0", fg="#333333")
+        title_label.pack(pady=20)
 
-        imgBG[234:654, 795:1195] = imgScaled
+        take_attendance_button = tk.Button(
+            self, text="Take Attendance", command=take_attendance,
+            font=button_font, bg="#4CAF50", fg="white", activebackground="#45a049",
+            width=20, height=2, relief=tk.RAISED, bd=0
+        )
+        take_attendance_button.pack(pady=10)
 
-        if stateResult:
-            imgBG = cvzone.overlayPNG(imgBG, imgAI, (149, 310))
+        update_database_button = tk.Button(
+            self, text="Update Database", command=update_database,
+            font=button_font, bg="#008CBA", fg="white", activebackground="#007B9A",
+            width=20, height=2, relief=tk.RAISED, bd=0
+        )
+        update_database_button.pack(pady=10)
 
-        cv2.putText(imgBG, str(Wrong_Right[0]), (410, 215), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 6)
-        if Wrong_Right[1] < 5:
-            cv2.putText(imgBG, str(Wrong_Right[1]), (1112, 215), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 6)
-        else:
-            cv2.putText(imgBG, "P", (1112, 215), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 6)
+        # Add hover effect
+        for button in (take_attendance_button, update_database_button):
+            button.bind("<Enter>", lambda e, b=button: b.config(bg=b.cget("activebackground")))
+            button.bind("<Leave>", lambda e, b=button: b.config(bg=b.cget("bg")))
 
-        cv2.imshow("BG", imgBG)
-        key = cv2.waitKey(1)
-        if datetime.datetime.now().second % 5 == 0 :
-            startCheck = True
-            initialTime = time.time()
-            stateResult = False
+def main():
+    app = AttendanceSystem()
+    app.mainloop()
 
-# Load the known faces and embeddings saved in the file
-known_faces = []
-known_names = []
-for file in os.listdir('C:/Attendance/known_faces/'):
-    image = face_recognition.load_image_file('C:/Attendance/known_faces/'+file)
-    face_encoding = face_recognition.face_encodings(image)[0]
-    known_faces.append(face_encoding)
-    known_names.append(os.path.splitext(file)[0])
-
-# Initialize some variables
-face_locations = []
-face_encodings = []
-face_names = []
-present_names = []
-
-now = datetime.datetime.now()
-date= now.strftime("%d/%m/%Y")
-
-# Load the attendance file or create it if it doesn't exist
-if os.path.exists('C:/Attendance/attendance_temp.csv'):
-    # Modify the first line to add the current date
-    with fileinput.FileInput('C:/Attendance/attendance_temp.csv', inplace=True) as file:
-        for i, line in enumerate(file):
-            if i == 0 and date not in line.rstrip():
-                modified_line = line.rstrip() + f', {date}\n'
-                print(modified_line, end='')
-            else:
-                print(line, end='')
-else:
-    with open('C:/Attendance/attendance_temp.csv', 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Name', f'{date}'])
-
-# Open the camera and capture the video stream
-video_capture = cv2.VideoCapture(0)
-
-while True:
-    # Capture a single frame from the camera
-    ret, frame = video_capture.read()
-    if not ret:
-        video_capture = cv2.VideoCapture(0)
-        continue
-    # Resize the frame for faster face detection
-    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-    # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-    rgb_small_frame = small_frame[:, :, ::-1]
-    # Find all the faces and face encodings in the current frame
-    face_locations = face_recognition.face_locations(rgb_small_frame)
-    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-    # Loop through each face in this frame and compare with the known faces
-    face_names = []
-    for face_encoding in face_encodings:
-        # See if the face is a match for the known faces
-        matches = face_recognition.compare_faces(known_faces, face_encoding)
-        name = "Unknown"
-        # Use the known face with the smallest distance to the new face
-        face_distances = face_recognition.face_distance(known_faces, face_encoding)
-        best_match_index = np.argmin(face_distances)
-        if matches[best_match_index]:
-            name = known_names[best_match_index]
-        face_names.append(name)
-    # Display the results
-    for (top, right, bottom, left), name in zip(face_locations, face_names):
-        # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-        top *= 4
-        right *= 4
-        bottom *= 4
-        left *= 4
-
-        # Draw a rectangle around the face
-        if name == "Unknown":
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-        else:
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255,0), cv2.FILLED)
-        font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.9, (255 ,255, 255), 1)
-    # Add the recognized person to the attendance list
-    for name in face_names:
-        if name not in present_names and name != "Unknown":
-            time.sleep(2)
-            if gesturefunction(name):
-                present_names.append(name)
-                continue
-
-    # Display the resulting image
-    cv2.imshow('Attendance', frame)
-    # Exit the loop when 'q' key is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-with fileinput.FileInput('C:/Attendance/attendance_temp.csv', inplace=True) as file:
-    # Loop over the lines in the file
-    for i, line in enumerate(file):
-        name = line.rsplit(",")[0]
-        # Add the string to the end of the first line
-        if i != 0:
-            if len(line.rsplit(",")) <= n-1 :
-                if name in present_names:
-                    print(line.rstrip()+", P\n", end='')
-                else:
-                    print(line.rstrip()+", A\n", end='')
-            else:
-                print(line.rstrip()+"\n", end='')
-        else:
-            n = len(line.rsplit(","))
-            print(line.rstrip()+"\n", end='')
-
-# Close video frame
-video_capture.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()
