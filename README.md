@@ -29,7 +29,7 @@ This project is a face recognition-based attendance system designed for classroo
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Nishant2009/Face-Attendance
+git clone https://github.com/Nishant232/Face-Attendance
 cd Face-Attendance
 ```
 
